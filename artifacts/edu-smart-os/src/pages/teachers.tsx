@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useListTeachers, getListTeachersQueryKey, useDeleteTeacher } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit, GraduationCap, Phone } from "lucide-react";
+import { Plus, Trash2, Edit, GraduationCap, Phone, Users, CircleDot, Banknote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { TeacherModal } from "@/components/modals/teacher-modal";
+import type { Teacher } from "@workspace/api-client-react";
 
 export default function Teachers() {
   const { data: teachers, isLoading } = useListTeachers();
@@ -12,16 +15,17 @@ export default function Teachers() {
   const { toast } = useToast();
   const deleteTeacher = useDeleteTeacher();
 
-  const handleDelete = (id: string) => {
-    if (confirm("هل أنت متأكد من حذف هذا المعلم؟")) {
+  const [addOpen, setAddOpen] = useState(false);
+  const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`هل أنت متأكد من حذف المعلم "${name}"؟`)) {
       deleteTeacher.mutate({ id }, {
         onSuccess: () => {
           toast({ title: "تم حذف المعلم بنجاح" });
           queryClient.invalidateQueries({ queryKey: getListTeachersQueryKey() });
         },
-        onError: () => {
-          toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" });
-        }
+        onError: () => toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" }),
       });
     }
   };
@@ -33,7 +37,7 @@ export default function Teachers() {
           <h1 className="text-3xl font-bold text-secondary">المعلمون</h1>
           <p className="text-muted-foreground mt-1">إدارة الكادر التعليمي</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+        <Button onClick={() => setAddOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <Plus className="ml-2 h-4 w-4" />
           إضافة معلم
         </Button>
@@ -41,49 +45,60 @@ export default function Teachers() {
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+          {[1,2,3].map(i => <Skeleton key={i} className="h-52 w-full rounded-xl" />)}
         </div>
       ) : !teachers?.length ? (
-        <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border border-border">
-          لا يوجد معلمون متاحون
+        <div className="text-center py-20 text-muted-foreground bg-card rounded-xl border border-border">
+          <GraduationCap className="h-14 w-14 mx-auto mb-4 opacity-30" />
+          <p className="text-lg">لا يوجد معلمون</p>
+          <p className="text-sm mt-2">اضغط على "إضافة معلم" للبدء</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {teachers.map((teacher) => (
-            <Card key={teacher.id} className="border-gold-500/20 overflow-hidden hover:shadow-md transition-shadow">
-              <CardHeader className="bg-muted/30 pb-4 border-b">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-3 rounded-full">
-                      <GraduationCap className="h-6 w-6 text-primary" />
+          {teachers.map(teacher => (
+            <Card key={teacher.id} className="border-gold-500/20 overflow-hidden hover:shadow-md transition-all duration-200">
+              <div className="bg-gradient-to-l from-primary/10 to-transparent p-5 border-b border-muted/50">
+                <div className="flex items-start gap-3">
+                  <div className="bg-primary/10 p-3 rounded-full flex-shrink-0">
+                    <GraduationCap className="h-7 w-7 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-lg text-secondary truncate">{teacher.full_name}</h3>
+                    <div className="flex items-center text-sm text-muted-foreground mt-1 gap-1">
+                      <Phone className="h-3 w-3 flex-shrink-0" />
+                      <span dir="ltr">{teacher.phone}</span>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-secondary">{teacher.full_name}</h3>
-                      <div className="flex items-center text-sm text-muted-foreground mt-1">
-                        <Phone className="ml-1 h-3 w-3" />
-                        <span dir="ltr">{teacher.phone}</span>
-                      </div>
-                    </div>
+                    {teacher.experience && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate">{teacher.experience}</p>
+                    )}
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="flex justify-between text-sm mb-4">
-                  <div className="text-center">
-                    <div className="text-muted-foreground">عدد الحلقات</div>
-                    <div className="font-semibold text-lg">{teacher.circle_count || 0}</div>
+              </div>
+              <CardContent className="pt-4 pb-4">
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="flex flex-col items-center bg-muted/30 rounded-lg p-3">
+                    <CircleDot className="h-4 w-4 text-accent mb-1" />
+                    <div className="text-xl font-bold text-accent">{teacher.circle_count ?? 0}</div>
+                    <div className="text-xs text-muted-foreground">حلقات</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-muted-foreground">عدد الطلاب</div>
-                    <div className="font-semibold text-lg">{teacher.student_count || 0}</div>
+                  <div className="flex flex-col items-center bg-muted/30 rounded-lg p-3">
+                    <Users className="h-4 w-4 text-primary mb-1" />
+                    <div className="text-xl font-bold text-primary">{teacher.student_count ?? 0}</div>
+                    <div className="text-xs text-muted-foreground">طلاب</div>
                   </div>
                 </div>
-                <div className="flex justify-end gap-2 pt-4 border-t border-muted/50">
-                  <Button variant="outline" size="sm" className="text-primary hover:text-primary">
+                {teacher.salary && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                    <Banknote className="h-4 w-4" />
+                    <span>المرتب: <span className="font-semibold text-secondary">{teacher.salary} ج.م</span></span>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2 pt-3 border-t border-muted/50">
+                  <Button variant="outline" size="sm" className="text-primary hover:text-primary hover:bg-primary/10" onClick={() => setEditTeacher(teacher)}>
                     <Edit className="h-4 w-4 ml-1" />
                     تعديل
                   </Button>
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(teacher.id)}>
+                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(teacher.id, teacher.full_name)}>
                     <Trash2 className="h-4 w-4 ml-1" />
                     حذف
                   </Button>
@@ -93,6 +108,9 @@ export default function Teachers() {
           ))}
         </div>
       )}
+
+      <TeacherModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <TeacherModal open={!!editTeacher} onClose={() => setEditTeacher(null)} teacher={editTeacher} />
     </div>
   );
 }
