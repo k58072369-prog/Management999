@@ -1,44 +1,77 @@
-# [Project name]
+# EDU SMART OS
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+نظام إدارة حلقات تحفيظ القرآن الكريم — منصة شاملة (LMS + ERP) تتيح إدارة الطلاب والمعلمين والحلقات والحصص والشؤون المالية مع واجهة عربية RTL فاخرة.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, proxied at /api)
+- `pnpm --filter @workspace/edu-smart-os run dev` — run the frontend (port 23917, proxied at /)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/scripts run seed` — seed sample data
+- Required env: `DATABASE_URL` — Postgres connection string (auto-provisioned by Replit)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite, TailwindCSS, shadcn/ui, TanStack Query, Wouter, Recharts
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
+- AI: Replit AI Integrations (OpenAI gpt-5.2) for insights + student analysis
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — OpenAPI contract (source of truth for all endpoints)
+- `lib/api-zod/` — generated Zod schemas from spec
+- `lib/api-client-react/` — generated React Query hooks from spec
+- `lib/db/src/schema/` — Drizzle ORM table definitions (students, teachers, circles, sessions, finance, notifications)
+- `artifacts/api-server/src/routes/` — all Express route handlers (one file per domain)
+- `artifacts/edu-smart-os/src/pages/` — all 10 React page components
+- `artifacts/edu-smart-os/src/components/` — shared components (layout, ui/)
+- `scripts/src/seed.ts` — sample data seeder
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Contract-first: OpenAPI spec defined before any routes or hooks are written
+- All API responses use snake_case keys (matching OpenAPI spec); DB columns use camelCase internally — `lib/transform.ts` handles conversion
+- Sessions auto-populate attendance records for all circle students on creation, carrying over next_memorization/next_revision from previous session
+- Finance invoices are per-student per-month; exempt students get "معفي" status automatically
+- AI routes (`/api/ai/insights`, `/api/ai/analyze-student/:id`) use Replit AI Integrations with no user API key required
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+10 modules accessible from the RTL sidebar:
+1. **لوحة التحكم** — real-time stats: student/teacher/circle/session counts, today's attendance, revenue, notifications, financial chart
+2. **الطلاب** — full CRUD, search, filter by circle/level/payment, guardian phone, memorization tracking
+3. **المعلمين** — teacher profiles with salary, hire date, student & circle counts
+4. **الحلقات** — circle management with teacher assignment, schedule, status
+5. **الحصص** — session management with auto-populated attendance records, carry-forward logic
+6. **الشؤون المالية** — invoices per student/month, expenses, summary with monthly breakdown
+7. **الإشعارات** — notification center with read/unread, priority levels, types
+8. **لوحة الصدارة** — student leaderboard ranked by points with gold/silver/bronze badges
+9. **التقارير** — attendance and memorization reports
+10. **مركز المساعدة** — help center with WhatsApp support link (wa.me/201127416995)
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Arabic RTL UI throughout
+- Islamic luxury aesthetic: Emerald Green (#10b981), Dark Green (#065f46), Gold/Amber (#f59e0b)
+- All responses must be snake_case matching OpenAPI spec
+- WhatsApp support: https://wa.me/201127416995 (Adham)
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- `lib/transform.ts` converts camelCase DB results → snake_case API responses; always use it in route handlers
+- The `pnpm-workspace.yaml` catalog pins most package versions; use `"catalog:"` for those
+- DB UUIDs as primary keys; no integer IDs
+- `pnpm --filter @workspace/db run push-force` if push fails with column conflicts
+- Express 5: wildcard routes need names (`/{*splat}`), async handlers annotated `Promise<void>`, early returns: `res.json(); return;`
+- AI_INTEGRATIONS_OPENAI_BASE_URL and AI_INTEGRATIONS_OPENAI_API_KEY auto-set by Replit; never modify
 
 ## Pointers
 
