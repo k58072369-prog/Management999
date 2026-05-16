@@ -213,23 +213,23 @@ export function SessionModal({ open, onClose }: SessionModalProps) {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs">الحفظ اليوم</Label>
-                          <Input size="sm" value={record.memorization_amount} onChange={e => setRecord(idx, "memorization_amount", e.target.value)} placeholder="ما حفظه اليوم" className="h-8 text-sm" />
+                          <Input value={record.memorization_amount} onChange={e => setRecord(idx, "memorization_amount", e.target.value)} placeholder="ما حفظه اليوم" className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">المراجعة اليوم</Label>
-                          <Input size="sm" value={record.revision_amount} onChange={e => setRecord(idx, "revision_amount", e.target.value)} placeholder="ما راجعه اليوم" className="h-8 text-sm" />
+                          <Input value={record.revision_amount} onChange={e => setRecord(idx, "revision_amount", e.target.value)} placeholder="ما راجعه اليوم" className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">حفظ المرة القادمة</Label>
-                          <Input size="sm" value={record.next_memorization} onChange={e => setRecord(idx, "next_memorization", e.target.value)} placeholder="للمرة القادمة" className="h-8 text-sm" />
+                          <Input value={record.next_memorization} onChange={e => setRecord(idx, "next_memorization", e.target.value)} placeholder="للمرة القادمة" className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">مراجعة المرة القادمة</Label>
-                          <Input size="sm" value={record.next_revision} onChange={e => setRecord(idx, "next_revision", e.target.value)} placeholder="للمرة القادمة" className="h-8 text-sm" />
+                          <Input value={record.next_revision} onChange={e => setRecord(idx, "next_revision", e.target.value)} placeholder="للمرة القادمة" className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">الدرجة (0-100)</Label>
-                          <Input type="number" size="sm" value={record.grade} onChange={e => setRecord(idx, "grade", e.target.value)} placeholder="0" min={0} max={100} className="h-8 text-sm" />
+                          <Input type="number" value={record.grade} onChange={e => setRecord(idx, "grade", e.target.value)} placeholder="0" min={0} max={100} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">التقييم</Label>
