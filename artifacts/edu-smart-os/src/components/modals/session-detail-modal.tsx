@@ -1,23 +1,9 @@
-import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Calendar, Clock, CheckCircle, XCircle, BookOpen } from "lucide-react";
-
-interface SessionRecord {
-  id: string;
-  student_id: string;
-  student_name: string;
-  is_present: boolean;
-  memorization_amount?: string;
-  revision_amount?: string;
-  next_memorization?: string;
-  next_revision?: string;
-  grade?: number;
-  performance_label?: string;
-  notes?: string;
-}
+import { useSessionRecords, useSessions } from "@/lib/store";
 
 interface SessionDetailModalProps {
   open: boolean;
@@ -26,21 +12,9 @@ interface SessionDetailModalProps {
 }
 
 export function SessionDetailModal({ open, sessionId, onClose }: SessionDetailModalProps) {
-  const [records, setRecords] = useState<SessionRecord[]>([]);
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!open || !sessionId) return;
-    setLoading(true);
-    Promise.all([
-      fetch(`/api/sessions/${sessionId}`).then(r => r.json()),
-      fetch(`/api/sessions/${sessionId}/records`).then(r => r.json()),
-    ]).then(([sess, recs]) => {
-      setSession(sess);
-      setRecords(Array.isArray(recs) ? recs : []);
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, [open, sessionId]);
+  const { sessions } = useSessions();
+  const session = sessionId ? sessions.find(s => s.id === sessionId) : null;
+  const { records, loading } = useSessionRecords(open ? sessionId : null);
 
   const presentCount = records.filter(r => r.is_present).length;
   const absentCount = records.filter(r => !r.is_present).length;

@@ -1,25 +1,23 @@
-import { useGetLeaderboard } from "@workspace/api-client-react";
+import { useLeaderboard } from "@/lib/store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Star, Award, Users, BookOpen, CheckCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Trophy, Star, Award, Users, BookOpen, CheckCircle } from "lucide-react";
 
 export default function Leaderboard() {
-  const { data: leaderboard, isLoading } = useGetLeaderboard();
-  const top3 = leaderboard?.slice(0, 3) ?? [];
-  const rest = leaderboard?.slice(3, 25) ?? [];
+  const { leaderboard, loading } = useLeaderboard();
+  const top3 = leaderboard.slice(0, 3);
+  const rest = leaderboard.slice(3, 25);
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <div className="inline-flex items-center justify-center p-3 bg-accent/10 rounded-2xl mb-1">
           <Trophy className="h-10 w-10 text-accent" />
         </div>
         <h1 className="text-4xl font-bold text-secondary">لوحة الشرف والصدارة</h1>
         <p className="text-muted-foreground">أفضل الطلاب أداءً والتزاماً — مكتب الفرقان لتحفيظ القرآن الكريم</p>
-        {leaderboard && (
+        {leaderboard.length > 0 && (
           <div className="flex justify-center gap-6 pt-2 text-sm">
             <div className="flex items-center gap-1 text-muted-foreground">
               <Users className="h-4 w-4" />
@@ -29,11 +27,11 @@ export default function Leaderboard() {
         )}
       </div>
 
-      {isLoading ? (
+      {loading ? (
         <div className="space-y-4 max-w-4xl mx-auto">
           {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
         </div>
-      ) : !leaderboard?.length ? (
+      ) : !leaderboard.length ? (
         <div className="text-center py-16 text-muted-foreground bg-card rounded-xl border max-w-4xl mx-auto">
           <Trophy className="h-16 w-16 mx-auto mb-4 opacity-20" />
           <p className="text-lg">لا توجد بيانات متاحة للوحة الصدارة</p>
@@ -41,10 +39,8 @@ export default function Leaderboard() {
         </div>
       ) : (
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Podium for top 3 */}
           {top3.length >= 1 && (
             <div className="grid grid-cols-3 gap-4 mb-2 items-end">
-              {/* 2nd place */}
               {top3[1] ? (
                 <div className="text-center space-y-2">
                   <div className="bg-gray-100 border border-gray-200 rounded-xl p-4 mx-2">
@@ -60,7 +56,6 @@ export default function Leaderboard() {
                 </div>
               ) : <div />}
 
-              {/* 1st place */}
               <div className="text-center space-y-2">
                 <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-4 shadow-lg shadow-yellow-200">
                   <Award className="h-6 w-6 text-yellow-500 mx-auto mb-1" />
@@ -81,7 +76,6 @@ export default function Leaderboard() {
                 <div className="bg-yellow-300 rounded-t-lg h-16 mx-4" />
               </div>
 
-              {/* 3rd place */}
               {top3[2] ? (
                 <div className="text-center space-y-2">
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mx-2">
@@ -99,17 +93,13 @@ export default function Leaderboard() {
             </div>
           )}
 
-          {/* Positions 4–25 */}
           {rest.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground px-1">المراكز 4 – 25</h3>
               {rest.map((entry, index) => {
                 const rank = index + 4;
                 return (
-                  <Card
-                    key={entry.student_id}
-                    className="border border-border hover:border-primary/30 hover:shadow-sm transition-all duration-200"
-                  >
+                  <Card key={entry.student_id} className="border border-border hover:border-primary/30 hover:shadow-sm transition-all duration-200">
                     <CardContent className="p-0">
                       <div className="flex items-center p-4 gap-4">
                         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
@@ -151,7 +141,6 @@ export default function Leaderboard() {
             </div>
           )}
 
-          {/* Points explanation */}
           <Card className="border-gold-500/20 bg-gradient-to-l from-primary/5 to-transparent">
             <CardContent className="p-5">
               <h4 className="font-semibold text-secondary mb-3 flex items-center gap-2">
@@ -161,9 +150,9 @@ export default function Leaderboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 {[
                   { label: "الحضور", desc: "10 نقاط لكل حضور" },
-                  { label: "الحفظ", desc: "حسب المقدار المحفوظ" },
+                  { label: "الحفظ", desc: "حسب درجة الأداء" },
                   { label: "المراجعة", desc: "حسب المقدار المراجع" },
-                  { label: "التقييم", desc: "حسب درجة الأداء" },
+                  { label: "التقييم", desc: "5 نقاط × التقييم" },
                 ].map((item, i) => (
                   <div key={i} className="bg-white/60 rounded-lg p-2.5 border border-primary/10 text-center">
                     <div className="font-semibold text-primary text-sm">{item.label}</div>

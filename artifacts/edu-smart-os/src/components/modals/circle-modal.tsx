@@ -5,10 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateCircle, useUpdateCircle, getListCirclesQueryKey, useListTeachers } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import type { Circle } from "@workspace/api-client-react";
+import { useTeachers, addCircle, updateCircle, type Circle } from "@/lib/store";
 
 const DAYS_OPTIONS = [
   "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت",
@@ -24,12 +22,9 @@ interface CircleModalProps {
 }
 
 export function CircleModal({ open, onClose, circle }: CircleModalProps) {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const createCircle = useCreateCircle();
-  const updateCircle = useUpdateCircle();
-  const { data: teachers } = useListTeachers();
-
+  const { teachers } = useTeachers();
+  const [isPending, setIsPending] = useState(false);
   const isEdit = !!circle;
 
   const [form, setForm] = useState({
@@ -56,7 +51,7 @@ export function CircleModal({ open, onClose, circle }: CircleModalProps) {
 
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name.trim()) { toast({ title: "اسم الحلقة مطلوب", variant: "destructive" }); return; }
 
     const time = form.start_time && form.end_time ? `${form.start_time} - ${form.end_time}` : form.start_time || undefined;
@@ -70,28 +65,22 @@ export function CircleModal({ open, onClose, circle }: CircleModalProps) {
       status: form.status,
     };
 
-    if (isEdit && circle) {
-      updateCircle.mutate({ id: circle.id, data: payload }, {
-        onSuccess: () => {
-          toast({ title: "تم تعديل الحلقة بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListCirclesQueryKey() });
-          onClose();
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء التعديل", variant: "destructive" }),
-      });
-    } else {
-      createCircle.mutate(payload as any, {
-        onSuccess: () => {
-          toast({ title: "تم إضافة الحلقة بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListCirclesQueryKey() });
-          onClose();
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء الإضافة", variant: "destructive" }),
-      });
+    setIsPending(true);
+    try {
+      if (isEdit && circle) {
+        await updateCircle(circle.id, payload);
+        toast({ title: "تم تعديل الحلقة بنجاح" });
+      } else {
+        await addCircle(payload as any);
+        toast({ title: "تم إضافة الحلقة بنجاح" });
+      }
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ أثناء الحفظ", variant: "destructive" });
+    } finally {
+      setIsPending(false);
     }
   };
-
-  const isPending = createCircle.isPending || updateCircle.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -113,19 +102,22 @@ export function CircleModal({ open, onClose, circle }: CircleModalProps) {
           </div>
           <div className="col-span-full space-y-2">
             <Label>المعلم المسؤول</Label>
-            <Select value={form.teacher_id} onValueChange={v => set("teacher_id", v)}>
+            <Select value={form.teacher_id || "none"} onValueChange={v => set("teacher_id", v)}>
               <SelectTrigger><SelectValue placeholder="اختر المعلم" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">بدون معلم</SelectItem>
-                {teachers?.map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                {teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="col-span-full space-y-2">
             <Label>أيام الحلقة</Label>
-            <Select value={form.days} onValueChange={v => set("days", v)}>
+            <Select value={form.days || "none"} onValueChange={v => set("days", v === "none" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="اختر الأيام" /></SelectTrigger>
-              <SelectContent>{DAYS_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="none">غير محدد</SelectItem>
+                {DAYS_OPTIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">

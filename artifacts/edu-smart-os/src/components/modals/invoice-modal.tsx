@@ -3,11 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUpdateInvoice, getListInvoicesQueryKey, getGetFinanceSummaryQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import type { Invoice } from "@workspace/api-client-react";
+import { updateInvoice, type Invoice } from "@/lib/store";
 
 interface InvoiceModalProps {
   open: boolean;
@@ -16,22 +14,22 @@ interface InvoiceModalProps {
 }
 
 export function InvoiceModal({ open, onClose, invoice }: InvoiceModalProps) {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const updateInvoice = useUpdateInvoice();
+  const [isPending, setIsPending] = useState(false);
   const [status, setStatus] = useState(invoice?.status ?? "غير مدفوع");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!invoice) return;
-    updateInvoice.mutate({ id: invoice.id, data: { status } as any }, {
-      onSuccess: () => {
-        toast({ title: "تم تحديث حالة الفاتورة" });
-        queryClient.invalidateQueries({ queryKey: getListInvoicesQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetFinanceSummaryQueryKey() });
-        onClose();
-      },
-      onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
-    });
+    setIsPending(true);
+    try {
+      await updateInvoice(invoice.id, { status });
+      toast({ title: "تم تحديث حالة الفاتورة" });
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   if (!invoice) return null;
@@ -79,9 +77,9 @@ export function InvoiceModal({ open, onClose, invoice }: InvoiceModalProps) {
           </div>
         </div>
         <div className="flex justify-end gap-3 pt-2 border-t">
-          <Button variant="outline" onClick={onClose} disabled={updateInvoice.isPending}>إلغاء</Button>
-          <Button onClick={handleSave} disabled={updateInvoice.isPending} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            {updateInvoice.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+          <Button variant="outline" onClick={onClose} disabled={isPending}>إلغاء</Button>
+          <Button onClick={handleSave} disabled={isPending} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            {isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
           </Button>
         </div>
       </DialogContent>

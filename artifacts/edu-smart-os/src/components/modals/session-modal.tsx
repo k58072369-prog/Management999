@@ -6,9 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { useCreateSession, useListCircles, useListStudents, getListSessionsQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useCircles, useStudents, addSession, saveSessionRecords } from "@/lib/store";
 
 const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const PERFORMANCE_LABELS = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"];
@@ -32,13 +31,14 @@ interface StudentRecord {
 }
 
 export function SessionModal({ open, onClose }: SessionModalProps) {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const createSession = useCreateSession();
-  const { data: circles } = useListCircles();
-  const { data: allStudents } = useListStudents({});
+  const { circles } = useCircles();
+  const { students: allStudents } = useStudents();
 
   const [step, setStep] = useState<"info" | "attendance">("info");
+  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const [form, setForm] = useState({
     circle_id: "",
     date: new Date().toISOString().split("T")[0],
@@ -50,7 +50,7 @@ export function SessionModal({ open, onClose }: SessionModalProps) {
   const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) { setStep("info"); setCreatedSessionId(null); }
+    if (!open) { setStep("info"); setCreatedSessionId(null); setIsCreating(false); }
   }, [open]);
 
   useEffect(() => {
@@ -79,53 +79,47 @@ export function SessionModal({ open, onClose }: SessionModalProps) {
   const handleCreateSession = async () => {
     if (!form.circle_id) { toast({ title: "يرجى اختيار الحلقة", variant: "destructive" }); return; }
     if (!form.date) { toast({ title: "يرجى تحديد التاريخ", variant: "destructive" }); return; }
-
-    createSession.mutate({
-      circle_id: form.circle_id,
-      date: form.date,
-      day: form.day || undefined,
-      time: form.time || undefined,
-      status: form.status,
-    } as any, {
-      onSuccess: (session: any) => {
-        setCreatedSessionId(session.id);
-        setStep("attendance");
-      },
-      onError: () => toast({ title: "حدث خطأ أثناء إنشاء الحصة", variant: "destructive" }),
-    });
+    setIsCreating(true);
+    try {
+      const sessionId = await addSession({
+        circle_id: form.circle_id,
+        date: form.date,
+        day: form.day || undefined,
+        time: form.time || undefined,
+        status: form.status,
+      });
+      setCreatedSessionId(sessionId);
+      setStep("attendance");
+    } catch {
+      toast({ title: "حدث خطأ أثناء إنشاء الحصة", variant: "destructive" });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleSaveAttendance = async () => {
     if (!createdSessionId) return;
-
+    setIsSaving(true);
     try {
-      const response = await fetch(`/api/sessions/${createdSessionId}/records`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          records: records.map(r => ({
-            student_id: r.student_id,
-            is_present: r.is_present,
-            memorization_amount: r.memorization_amount || undefined,
-            revision_amount: r.revision_amount || undefined,
-            next_memorization: r.next_memorization || undefined,
-            next_revision: r.next_revision || undefined,
-            grade: r.grade ? parseInt(r.grade) : undefined,
-            performance_label: r.performance_label || undefined,
-            notes: r.notes || undefined,
-          })),
-        }),
-      });
-
-      if (response.ok) {
-        toast({ title: "تم حفظ الحصة وسجلات الحضور بنجاح" });
-        queryClient.invalidateQueries({ queryKey: getListSessionsQueryKey() });
-        onClose();
-      } else {
-        toast({ title: "حدث خطأ أثناء حفظ سجلات الحضور", variant: "destructive" });
-      }
+      await saveSessionRecords(createdSessionId, records.map(r => ({
+        session_id: createdSessionId,
+        student_id: r.student_id,
+        student_name: r.student_name,
+        is_present: r.is_present,
+        memorization_amount: r.memorization_amount || undefined,
+        revision_amount: r.revision_amount || undefined,
+        next_memorization: r.next_memorization || undefined,
+        next_revision: r.next_revision || undefined,
+        grade: r.grade ? parseInt(r.grade) : undefined,
+        performance_label: r.performance_label || undefined,
+        notes: r.notes || undefined,
+      })));
+      toast({ title: "تم حفظ الحصة وسجلات الحضور بنجاح" });
+      onClose();
     } catch {
-      toast({ title: "حدث خطأ في الاتصال", variant: "destructive" });
+      toast({ title: "حدث خطأ أثناء حفظ سجلات الحضور", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -145,7 +139,9 @@ export function SessionModal({ open, onClose }: SessionModalProps) {
                 <Label>الحلقة <span className="text-destructive">*</span></Label>
                 <Select value={form.circle_id} onValueChange={v => setField("circle_id", v)}>
                   <SelectTrigger><SelectValue placeholder="اختر الحلقة" /></SelectTrigger>
-                  <SelectContent>{circles?.map(c => <SelectItem key={c.id} value={c.id}>{c.name} - {c.teacher_name || "بدون معلم"}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {circles.map(c => <SelectItem key={c.id} value={c.id}>{c.name} - {c.teacher_name || "بدون معلم"}</SelectItem>)}
+                  </SelectContent>
                 </Select>
                 {form.circle_id && (
                   <p className="text-sm text-muted-foreground">
@@ -182,8 +178,8 @@ export function SessionModal({ open, onClose }: SessionModalProps) {
             </div>
             <div className="flex justify-end gap-3 pt-2 border-t">
               <Button variant="outline" onClick={onClose}>إلغاء</Button>
-              <Button onClick={handleCreateSession} disabled={createSession.isPending} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                {createSession.isPending ? "جاري الإنشاء..." : "التالي: تسجيل الحضور"}
+              <Button onClick={handleCreateSession} disabled={isCreating} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                {isCreating ? "جاري الإنشاء..." : "التالي: تسجيل الحضور"}
               </Button>
             </div>
           </div>
@@ -233,9 +229,12 @@ export function SessionModal({ open, onClose }: SessionModalProps) {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">التقييم</Label>
-                          <Select value={record.performance_label} onValueChange={v => setRecord(idx, "performance_label", v)}>
+                          <Select value={record.performance_label || "none"} onValueChange={v => setRecord(idx, "performance_label", v === "none" ? "" : v)}>
                             <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="التقييم" /></SelectTrigger>
-                            <SelectContent>{PERFORMANCE_LABELS.map(l => <SelectItem key={l} value={l} className="text-sm">{l}</SelectItem>)}</SelectContent>
+                            <SelectContent>
+                              <SelectItem value="none">اختر</SelectItem>
+                              {PERFORMANCE_LABELS.map(l => <SelectItem key={l} value={l} className="text-sm">{l}</SelectItem>)}
+                            </SelectContent>
                           </Select>
                         </div>
                       </div>
@@ -247,8 +246,8 @@ export function SessionModal({ open, onClose }: SessionModalProps) {
 
             <div className="flex justify-between gap-3 pt-2 border-t">
               <Button variant="outline" onClick={() => setStep("info")}>السابق</Button>
-              <Button onClick={handleSaveAttendance} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                حفظ الحصة والحضور
+              <Button onClick={handleSaveAttendance} disabled={isSaving} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                {isSaving ? "جاري الحفظ..." : "حفظ الحصة والحضور"}
               </Button>
             </div>
           </div>

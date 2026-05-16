@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useListStudents, getListStudentsQueryKey, useDeleteStudent } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useStudents, deleteStudent, type Student } from "@/lib/store";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -10,28 +9,24 @@ import { Plus, Search, Trash2, Edit, Eye, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { StudentModal } from "@/components/modals/student-modal";
 import { StudentDetailModal } from "@/components/modals/student-detail-modal";
-import type { Student } from "@workspace/api-client-react";
 
 export default function Students() {
   const [search, setSearch] = useState("");
-  const { data: students, isLoading } = useListStudents({ search });
-  const queryClient = useQueryClient();
+  const { students, loading } = useStudents(search);
   const { toast } = useToast();
-  const deleteStudent = useDeleteStudent();
 
   const [addOpen, setAddOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`هل أنت متأكد من حذف الطالب "${name}"؟`)) {
-      deleteStudent.mutate({ id }, {
-        onSuccess: () => {
-          toast({ title: "تم حذف الطالب بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" }),
-      });
+      try {
+        await deleteStudent(id);
+        toast({ title: "تم حذف الطالب بنجاح" });
+      } catch {
+        toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" });
+      }
     }
   };
 
@@ -54,13 +49,12 @@ export default function Students() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "إجمالي الطلاب", value: students?.length ?? 0, color: "text-primary" },
-          { label: "مدفوعون", value: students?.filter(s => s.payment_status === "مدفوع").length ?? 0, color: "text-green-600" },
-          { label: "غير مدفوعين", value: students?.filter(s => s.payment_status === "غير مدفوع").length ?? 0, color: "text-destructive" },
-          { label: "معفيون", value: students?.filter(s => s.is_exempt).length ?? 0, color: "text-blue-600" },
+          { label: "إجمالي الطلاب", value: students.length, color: "text-primary" },
+          { label: "مدفوعون", value: students.filter(s => s.payment_status === "مدفوع").length, color: "text-green-600" },
+          { label: "غير مدفوعين", value: students.filter(s => s.payment_status === "غير مدفوع").length, color: "text-destructive" },
+          { label: "معفيون", value: students.filter(s => s.is_exempt).length, color: "text-blue-600" },
         ].map((stat, i) => (
           <Card key={i} className="border-gold-500/20">
             <CardContent className="pt-4 pb-3">
@@ -81,18 +75,16 @@ export default function Students() {
               onChange={e => setSearch(e.target.value)}
               className="max-w-sm"
             />
-            {students && (
-              <span className="text-sm text-muted-foreground mr-auto">
-                <Users className="h-4 w-4 inline ml-1" />
-                {students.length} طالب
-              </span>
-            )}
+            <span className="text-sm text-muted-foreground mr-auto">
+              <Users className="h-4 w-4 inline ml-1" />
+              {students.length} طالب
+            </span>
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {loading ? (
             <div className="space-y-3">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 w-full" />)}</div>
-          ) : !students?.length ? (
+          ) : !students.length ? (
             <div className="text-center py-16 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="text-lg">لا يوجد طلاب</p>
@@ -117,10 +109,7 @@ export default function Students() {
                   {students.map(student => (
                     <tr key={student.id} className="border-b border-muted/60 hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3 font-semibold text-secondary">
-                        <button
-                          onClick={() => setDetailStudent(student)}
-                          className="hover:text-primary hover:underline transition-colors"
-                        >
+                        <button onClick={() => setDetailStudent(student)} className="hover:text-primary hover:underline transition-colors">
                           {student.full_name}
                         </button>
                       </td>

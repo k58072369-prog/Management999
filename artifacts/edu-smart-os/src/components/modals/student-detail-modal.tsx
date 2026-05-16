@@ -1,8 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Phone, Mail, MapPin, GraduationCap, BookOpen, Star } from "lucide-react";
-import type { Student } from "@workspace/api-client-react";
+import { Edit, Phone, Mail, MapPin, BookOpen } from "lucide-react";
+import type { Student } from "@/lib/store";
 
 interface StudentDetailModalProps {
   open: boolean;

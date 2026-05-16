@@ -1,32 +1,27 @@
 import { useState } from "react";
-import { useListTeachers, getListTeachersQueryKey, useDeleteTeacher } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useTeachers, deleteTeacher, type Teacher } from "@/lib/store";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit, GraduationCap, Phone, Users, CircleDot, Banknote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TeacherModal } from "@/components/modals/teacher-modal";
-import type { Teacher } from "@workspace/api-client-react";
 
 export default function Teachers() {
-  const { data: teachers, isLoading } = useListTeachers();
-  const queryClient = useQueryClient();
+  const { teachers, loading } = useTeachers();
   const { toast } = useToast();
-  const deleteTeacher = useDeleteTeacher();
 
   const [addOpen, setAddOpen] = useState(false);
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`هل أنت متأكد من حذف المعلم "${name}"؟`)) {
-      deleteTeacher.mutate({ id }, {
-        onSuccess: () => {
-          toast({ title: "تم حذف المعلم بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListTeachersQueryKey() });
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" }),
-      });
+      try {
+        await deleteTeacher(id);
+        toast({ title: "تم حذف المعلم بنجاح" });
+      } catch {
+        toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" });
+      }
     }
   };
 
@@ -43,11 +38,11 @@ export default function Teachers() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1,2,3].map(i => <Skeleton key={i} className="h-52 w-full rounded-xl" />)}
         </div>
-      ) : !teachers?.length ? (
+      ) : !teachers.length ? (
         <div className="text-center py-20 text-muted-foreground bg-card rounded-xl border border-border">
           <GraduationCap className="h-14 w-14 mx-auto mb-4 opacity-30" />
           <p className="text-lg">لا يوجد معلمون</p>

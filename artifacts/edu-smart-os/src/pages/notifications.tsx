@@ -1,43 +1,37 @@
-import { useListNotifications, getListNotificationsQueryKey, useMarkNotificationRead } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useNotifications, markNotificationRead, markAllNotificationsRead } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Check, Info, AlertTriangle, AlertCircle, ShieldAlert, DollarSign, Star, CheckCircle2 } from "lucide-react";
+import { Bell, Check, AlertTriangle, AlertCircle, ShieldAlert, DollarSign, Star, CheckCircle2, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Notifications() {
-  const { data: notifications, isLoading } = useListNotifications();
-  const queryClient = useQueryClient();
+  const { notifications, loading } = useNotifications();
   const { toast } = useToast();
-  const markRead = useMarkNotificationRead();
 
-  const handleMarkRead = (id: string) => {
-    markRead.mutate({ id }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
-      },
-      onError: () => toast({ title: "حدث خطأ", variant: "destructive" }),
-    });
+  const handleMarkRead = async (id: string) => {
+    try {
+      await markNotificationRead(id);
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
   };
 
-  const handleMarkAllRead = () => {
-    const unread = notifications?.filter(n => !n.is_read) ?? [];
-    unread.forEach(n => markRead.mutate({ id: n.id }));
-    setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
-    }, 300);
-    toast({ title: "تم تحديد جميع الإشعارات كمقروءة" });
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+      toast({ title: "تم تحديد جميع الإشعارات كمقروءة" });
+    } catch {
+      toast({ title: "حدث خطأ", variant: "destructive" });
+    }
   };
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "غياب":
-      case "attendance": return <AlertCircle className="h-5 w-5 text-amber-500" />;
-      case "مالي":
-      case "payment": return <DollarSign className="h-5 w-5 text-destructive" />;
+      case "غياب": return <AlertCircle className="h-5 w-5 text-amber-500" />;
+      case "مالي": return <DollarSign className="h-5 w-5 text-destructive" />;
       case "إنجاز": return <Star className="h-5 w-5 text-accent" />;
       case "system": return <ShieldAlert className="h-5 w-5 text-primary" />;
       case "أداء": return <Info className="h-5 w-5 text-blue-500" />;
@@ -50,7 +44,7 @@ export default function Notifications() {
     priority === "مهم" ? "text-amber-600 border-amber-400 bg-amber-50" :
     "text-muted-foreground border-muted";
 
-  const unreadCount = notifications?.filter(n => !n.is_read).length ?? 0;
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
     <div className="space-y-6">
@@ -74,14 +68,13 @@ export default function Notifications() {
         )}
       </div>
 
-      {/* Stats */}
-      {notifications && notifications.length > 0 && (
+      {notifications.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "إجمالي", value: notifications.length, icon: Bell, color: "text-primary" },
             { label: "غير مقروءة", value: unreadCount, icon: AlertCircle, color: "text-destructive" },
-            { label: "غياب", value: notifications.filter(n => n.type === "غياب" || n.type === "attendance").length, icon: AlertTriangle, color: "text-amber-600" },
-            { label: "مالية", value: notifications.filter(n => n.type === "مالي" || n.type === "payment").length, icon: DollarSign, color: "text-blue-600" },
+            { label: "غياب", value: notifications.filter(n => n.type === "غياب").length, icon: AlertTriangle, color: "text-amber-600" },
+            { label: "مالية", value: notifications.filter(n => n.type === "مالي").length, icon: DollarSign, color: "text-blue-600" },
           ].map((stat, i) => (
             <Card key={i} className="border-gold-500/20">
               <CardContent className="pt-4 pb-3 flex items-center gap-3">
@@ -104,7 +97,7 @@ export default function Notifications() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
+          {loading ? (
             <div className="space-y-0 divide-y divide-border px-6">
               {[1,2,3,4,5].map(i => (
                 <div key={i} className="py-4 flex gap-4">
@@ -116,14 +109,14 @@ export default function Notifications() {
                 </div>
               ))}
             </div>
-          ) : !notifications?.length ? (
+          ) : !notifications.length ? (
             <div className="text-center py-16 text-muted-foreground flex flex-col items-center justify-center">
               <Bell className="h-12 w-12 text-muted mb-4 opacity-30" />
               <p>لا توجد إشعارات في الوقت الحالي</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {[...notifications].reverse().map(notif => (
+              {notifications.map(notif => (
                 <div
                   key={notif.id}
                   className={cn(
@@ -131,18 +124,14 @@ export default function Notifications() {
                     !notif.is_read && "bg-primary/5 border-r-2 border-r-primary"
                   )}
                 >
-                  <div className="mt-0.5 shrink-0">
-                    {getIcon(notif.type ?? "")}
-                  </div>
+                  <div className="mt-0.5 shrink-0">{getIcon(notif.type ?? "")}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2 mb-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className={cn("font-semibold text-secondary", !notif.is_read && "text-primary")}>
                           {notif.title}
                         </h4>
-                        {!notif.is_read && (
-                          <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                        )}
+                        {!notif.is_read && <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />}
                         {notif.priority && notif.priority !== "عادي" && (
                           <Badge variant="outline" className={`text-xs ${getPriorityColor(notif.priority)}`}>
                             {notif.priority}

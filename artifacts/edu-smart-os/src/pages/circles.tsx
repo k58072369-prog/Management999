@@ -1,33 +1,28 @@
 import { useState } from "react";
-import { useListCircles, getListCirclesQueryKey, useDeleteCircle } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useCircles, deleteCircle, type Circle } from "@/lib/store";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Edit, CircleDot, Clock, Users, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CircleModal } from "@/components/modals/circle-modal";
-import type { Circle } from "@workspace/api-client-react";
 
 export default function Circles() {
-  const { data: circles, isLoading } = useListCircles();
-  const queryClient = useQueryClient();
+  const { circles, loading } = useCircles();
   const { toast } = useToast();
-  const deleteCircle = useDeleteCircle();
 
   const [addOpen, setAddOpen] = useState(false);
   const [editCircle, setEditCircle] = useState<Circle | null>(null);
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`هل أنت متأكد من حذف الحلقة "${name}"؟`)) {
-      deleteCircle.mutate({ id }, {
-        onSuccess: () => {
-          toast({ title: "تم حذف الحلقة بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListCirclesQueryKey() });
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" }),
-      });
+      try {
+        await deleteCircle(id);
+        toast({ title: "تم حذف الحلقة بنجاح" });
+      } catch {
+        toast({ title: "حدث خطأ أثناء الحذف", variant: "destructive" });
+      }
     }
   };
 
@@ -49,8 +44,7 @@ export default function Circles() {
         </Button>
       </div>
 
-      {/* Summary */}
-      {circles && (
+      {circles.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
           <Card className="border-gold-500/20">
             <CardContent className="pt-4 pb-3 text-center">
@@ -73,11 +67,11 @@ export default function Circles() {
         </div>
       )}
 
-      {isLoading ? (
+      {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1,2,3].map(i => <Skeleton key={i} className="h-52 w-full rounded-xl" />)}
         </div>
-      ) : !circles?.length ? (
+      ) : !circles.length ? (
         <div className="text-center py-20 text-muted-foreground bg-card rounded-xl border border-border">
           <CircleDot className="h-14 w-14 mx-auto mb-4 opacity-30" />
           <p className="text-lg">لا يوجد حلقات</p>

@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateExpense, getListExpensesQueryKey, getGetFinanceSummaryQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { addExpense } from "@/lib/store";
 
 const CATEGORIES = [
   "مرتبات", "إيجار", "كهرباء", "مياه", "صيانة",
@@ -20,9 +19,8 @@ interface ExpenseModalProps {
 }
 
 export function ExpenseModal({ open, onClose }: ExpenseModalProps) {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const createExpense = useCreateExpense();
+  const [isPending, setIsPending] = useState(false);
 
   const [form, setForm] = useState({
     category: "",
@@ -37,25 +35,26 @@ export function ExpenseModal({ open, onClose }: ExpenseModalProps) {
 
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.category) { toast({ title: "التصنيف مطلوب", variant: "destructive" }); return; }
     if (!form.amount || parseFloat(form.amount) <= 0) { toast({ title: "المبلغ مطلوب ويجب أن يكون أكبر من صفر", variant: "destructive" }); return; }
     if (!form.date) { toast({ title: "التاريخ مطلوب", variant: "destructive" }); return; }
 
-    createExpense.mutate({
-      category: form.category,
-      description: form.description || undefined,
-      amount: parseFloat(form.amount),
-      date: form.date,
-    } as any, {
-      onSuccess: () => {
-        toast({ title: "تم إضافة المصروف بنجاح" });
-        queryClient.invalidateQueries({ queryKey: getListExpensesQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetFinanceSummaryQueryKey() });
-        onClose();
-      },
-      onError: () => toast({ title: "حدث خطأ أثناء الإضافة", variant: "destructive" }),
-    });
+    setIsPending(true);
+    try {
+      await addExpense({
+        category: form.category,
+        description: form.description || undefined,
+        amount: parseFloat(form.amount),
+        date: form.date,
+      });
+      toast({ title: "تم إضافة المصروف بنجاح" });
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ أثناء الإضافة", variant: "destructive" });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -67,9 +66,12 @@ export function ExpenseModal({ open, onClose }: ExpenseModalProps) {
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>التصنيف <span className="text-destructive">*</span></Label>
-            <Select value={form.category} onValueChange={v => set("category", v)}>
+            <Select value={form.category || "none"} onValueChange={v => set("category", v === "none" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="اختر التصنيف" /></SelectTrigger>
-              <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="none">اختر</SelectItem>
+                {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
@@ -86,9 +88,9 @@ export function ExpenseModal({ open, onClose }: ExpenseModalProps) {
           </div>
         </div>
         <div className="flex justify-end gap-3 pt-2 border-t">
-          <Button variant="outline" onClick={onClose} disabled={createExpense.isPending}>إلغاء</Button>
-          <Button onClick={handleSubmit} disabled={createExpense.isPending} className="bg-destructive hover:bg-destructive/90 text-white">
-            {createExpense.isPending ? "جاري الحفظ..." : "إضافة المصروف"}
+          <Button variant="outline" onClick={onClose} disabled={isPending}>إلغاء</Button>
+          <Button onClick={handleSubmit} disabled={isPending} className="bg-destructive hover:bg-destructive/90 text-white">
+            {isPending ? "جاري الحفظ..." : "إضافة المصروف"}
           </Button>
         </div>
       </DialogContent>

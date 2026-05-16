@@ -1,16 +1,13 @@
 import { Link } from "wouter";
-import {
-  useGetDashboardStats, useListStudents, useListSessions,
-  useGetLeaderboard, useListNotifications,
-} from "@workspace/api-client-react";
+import { useDashboardStats, useLeaderboard, useSessions, useNotifications } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Users, GraduationCap, CircleDot, CalendarDays,
-  TrendingUp, TrendingDown, AlertCircle, Bell, Trophy,
-  CheckCircle, XCircle, DollarSign, Wallet, Star,
+  TrendingUp, TrendingDown, Bell, Trophy,
+  CheckCircle, XCircle, Wallet, Star,
   BookOpen, ArrowLeft, Calendar, BarChart3,
 } from "lucide-react";
 import {
@@ -19,10 +16,10 @@ import {
 } from "recharts";
 
 export default function Dashboard() {
-  const { data: stats, isLoading } = useGetDashboardStats();
-  const { data: leaderboard } = useGetLeaderboard();
-  const { data: sessions } = useListSessions({});
-  const { data: notifications } = useListNotifications();
+  const { stats, loading: isLoading } = useDashboardStats();
+  const { leaderboard } = useLeaderboard();
+  const { sessions } = useSessions();
+  const { notifications } = useNotifications();
 
   const unreadNotifs = notifications?.filter(n => !n.is_read).length ?? 0;
   const topStudents = leaderboard?.slice(0, 5) ?? [];
@@ -123,7 +120,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-secondary tracking-tight">لوحة التحكم</h1>
@@ -144,7 +140,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Main Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statCards.map((stat, i) => (
           <Link key={i} href={stat.link}>
@@ -164,9 +159,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Financial Bar Chart */}
         <Card className="border-gold-500/20 col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg text-secondary flex items-center gap-2">
@@ -199,7 +192,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Attendance Pie */}
         <Card className="border-gold-500/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg text-secondary flex items-center gap-2">
@@ -240,9 +232,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Bottom Row: Top Students + Recent Sessions + Notifications */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Top Students */}
         <Card className="border-gold-500/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -278,7 +268,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Sessions */}
         <Card className="border-gold-500/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -322,7 +311,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Notifications */}
         <Card className="border-gold-500/20">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -355,7 +343,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Smart Analysis Banner */}
       <Card className="border-gold-500/30 bg-gradient-to-l from-primary/5 to-accent/5">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
@@ -393,21 +380,12 @@ export default function Dashboard() {
                   <div className="text-xs text-muted-foreground mt-1">طالب / حلقة</div>
                 </div>
                 <div className="bg-white/60 rounded-lg p-3 border border-green-200">
-                  <div className="text-xs text-muted-foreground mb-1">نسبة تحصيل الرسوم</div>
+                  <div className="text-xs text-muted-foreground mb-1">إجمالي الإيرادات</div>
                   <div className="text-xl font-bold text-green-600">
-                    {stats.total_revenue != null && stats.total_expenses != null && (stats.total_revenue + stats.total_expenses) > 0
-                      ? Math.round((stats.total_revenue / (stats.total_revenue + stats.total_expenses)) * 100)
-                      : "—"}%
+                    {(stats.total_revenue ?? 0).toLocaleString()} ج.م
                   </div>
                   <div className="w-full bg-muted rounded-full h-1.5 mt-2">
-                    <div
-                      className="bg-green-500 h-1.5 rounded-full"
-                      style={{
-                        width: `${stats.total_revenue != null && stats.total_expenses != null && (stats.total_revenue + stats.total_expenses) > 0
-                          ? Math.round((stats.total_revenue / (stats.total_revenue + stats.total_expenses)) * 100)
-                          : 0}%`
-                      }}
-                    />
+                    <div className="bg-green-500 h-1.5 rounded-full" style={{ width: "100%" }} />
                   </div>
                 </div>
               </div>

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useListSessions, useListCircles, getListSessionsQueryKey } from "@workspace/api-client-react";
+import { useSessions, useCircles } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar as CalendarIcon, Users, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SessionModal } from "@/components/modals/session-modal";
 import { SessionDetailModal } from "@/components/modals/session-detail-modal";
@@ -14,10 +14,8 @@ export default function Sessions() {
   const [detailSessionId, setDetailSessionId] = useState<string | null>(null);
   const [filterCircle, setFilterCircle] = useState<string>("all");
 
-  const { data: circles } = useListCircles();
-  const { data: sessions, isLoading } = useListSessions(
-    filterCircle !== "all" ? { circle_id: filterCircle } : {}
-  );
+  const { circles } = useCircles();
+  const { sessions, loading } = useSessions(filterCircle !== "all" ? filterCircle : undefined);
 
   const statusColor = (status: string) =>
     status === "مكتملة" ? "text-green-600 border-green-600 bg-green-50" :
@@ -37,8 +35,7 @@ export default function Sessions() {
         </Button>
       </div>
 
-      {/* Stats */}
-      {sessions && (
+      {sessions.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="border-gold-500/20">
             <CardContent className="pt-4 pb-3 text-center">
@@ -77,15 +74,15 @@ export default function Sessions() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الحلقات</SelectItem>
-                {circles?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {circles.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {loading ? (
             <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-14 w-full" />)}</div>
-          ) : !sessions?.length ? (
+          ) : !sessions.length ? (
             <div className="text-center py-16 text-muted-foreground">
               <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="text-lg">لا يوجد حصص مسجلة</p>

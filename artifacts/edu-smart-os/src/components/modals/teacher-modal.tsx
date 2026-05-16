@@ -4,10 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateTeacher, useUpdateTeacher, getListTeachersQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import type { Teacher } from "@workspace/api-client-react";
+import { addTeacher, updateTeacher, type Teacher } from "@/lib/store";
 
 interface TeacherModalProps {
   open: boolean;
@@ -16,11 +14,8 @@ interface TeacherModalProps {
 }
 
 export function TeacherModal({ open, onClose, teacher }: TeacherModalProps) {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
-  const createTeacher = useCreateTeacher();
-  const updateTeacher = useUpdateTeacher();
-
+  const [isPending, setIsPending] = useState(false);
   const isEdit = !!teacher;
 
   const [form, setForm] = useState({
@@ -49,7 +44,7 @@ export function TeacherModal({ open, onClose, teacher }: TeacherModalProps) {
 
   const set = (key: string, val: string) => setForm(f => ({ ...f, [key]: val }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.full_name.trim()) { toast({ title: "الاسم مطلوب", variant: "destructive" }); return; }
     if (!form.phone.trim()) { toast({ title: "رقم الهاتف مطلوب", variant: "destructive" }); return; }
 
@@ -66,28 +61,22 @@ export function TeacherModal({ open, onClose, teacher }: TeacherModalProps) {
       notes: form.notes || undefined,
     };
 
-    if (isEdit && teacher) {
-      updateTeacher.mutate({ id: teacher.id, data: payload }, {
-        onSuccess: () => {
-          toast({ title: "تم تعديل بيانات المعلم بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListTeachersQueryKey() });
-          onClose();
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء التعديل", variant: "destructive" }),
-      });
-    } else {
-      createTeacher.mutate(payload as any, {
-        onSuccess: () => {
-          toast({ title: "تم إضافة المعلم بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListTeachersQueryKey() });
-          onClose();
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء الإضافة", variant: "destructive" }),
-      });
+    setIsPending(true);
+    try {
+      if (isEdit && teacher) {
+        await updateTeacher(teacher.id, payload);
+        toast({ title: "تم تعديل بيانات المعلم بنجاح" });
+      } else {
+        await addTeacher(payload as any);
+        toast({ title: "تم إضافة المعلم بنجاح" });
+      }
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ أثناء الحفظ", variant: "destructive" });
+    } finally {
+      setIsPending(false);
     }
   };
-
-  const isPending = createTeacher.isPending || updateTeacher.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

@@ -6,10 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { useCreateStudent, useUpdateStudent, getListStudentsQueryKey, useListTeachers, useListCircles } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import type { Student } from "@workspace/api-client-react";
+import { useTeachers, useCircles, addStudent, updateStudent, type Student } from "@/lib/store";
 
 const GRADES = [
   "أولى ابتدائي", "ثانية ابتدائي", "ثالثة ابتدائي",
@@ -17,7 +15,6 @@ const GRADES = [
   "أولى إعدادي", "ثانية إعدادي", "ثالثة إعدادي",
   "أولى ثانوي", "ثانية ثانوي", "ثالثة ثانوي",
 ];
-
 const GOVERNORATES = [
   "القاهرة", "الجيزة", "الإسكندرية", "الدقهلية", "البحيرة",
   "الفيوم", "الغربية", "الإسماعيلية", "المنوفية", "المنيا",
@@ -25,7 +22,6 @@ const GOVERNORATES = [
   "دمياط", "الشرقية", "كفر الشيخ", "مطروح", "بني سويف",
   "بورسعيد", "السويس", "جنوب سيناء", "شمال سيناء", "الوادي الجديد",
 ];
-
 const LEVELS = ["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"];
 const PAYMENT_STATUSES = ["مدفوع", "غير مدفوع", "معفي", "متأخر"];
 
@@ -35,38 +31,23 @@ interface StudentModalProps {
   student?: Student | null;
 }
 
-export function StudentModal({ open, onClose, student }: StudentModalProps) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const createStudent = useCreateStudent();
-  const updateStudent = useUpdateStudent();
-  const { data: teachers } = useListTeachers();
-  const { data: circles } = useListCircles();
+const defaultForm = {
+  full_name: "", age: "", birth_date: "", grade: "", address: "",
+  governorate: "", guardian_phone: "", secondary_phone: "", email: "",
+  teacher_id: "", circle_id: "", payment_status: "غير مدفوع",
+  payment_amount: "", is_exempt: false, current_memorization: "",
+  current_revision: "", level: "", rating: "", notes: "",
+  enrollment_date: new Date().toISOString().split("T")[0],
+};
 
+export function StudentModal({ open, onClose, student }: StudentModalProps) {
+  const { toast } = useToast();
+  const { teachers } = useTeachers();
+  const { circles } = useCircles();
+  const [isPending, setIsPending] = useState(false);
   const isEdit = !!student;
 
-  const [form, setForm] = useState({
-    full_name: "",
-    age: "",
-    birth_date: "",
-    grade: "",
-    address: "",
-    governorate: "",
-    guardian_phone: "",
-    secondary_phone: "",
-    email: "",
-    teacher_id: "",
-    circle_id: "",
-    payment_status: "غير مدفوع",
-    payment_amount: "",
-    is_exempt: false,
-    current_memorization: "",
-    current_revision: "",
-    level: "",
-    rating: "",
-    notes: "",
-    enrollment_date: new Date().toISOString().split("T")[0],
-  });
+  const [form, setForm] = useState({ ...defaultForm });
 
   useEffect(() => {
     if (student) {
@@ -93,20 +74,13 @@ export function StudentModal({ open, onClose, student }: StudentModalProps) {
         enrollment_date: student.enrollment_date ?? new Date().toISOString().split("T")[0],
       });
     } else {
-      setForm({
-        full_name: "", age: "", birth_date: "", grade: "", address: "",
-        governorate: "", guardian_phone: "", secondary_phone: "", email: "",
-        teacher_id: "", circle_id: "", payment_status: "غير مدفوع",
-        payment_amount: "", is_exempt: false, current_memorization: "",
-        current_revision: "", level: "", rating: "", notes: "",
-        enrollment_date: new Date().toISOString().split("T")[0],
-      });
+      setForm({ ...defaultForm, enrollment_date: new Date().toISOString().split("T")[0] });
     }
   }, [student, open]);
 
   const set = (key: string, val: unknown) => setForm(f => ({ ...f, [key]: val }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.full_name.trim()) { toast({ title: "الاسم مطلوب", variant: "destructive" }); return; }
     if (!form.grade) { toast({ title: "الصف الدراسي مطلوب", variant: "destructive" }); return; }
     if (!form.guardian_phone.trim()) { toast({ title: "رقم ولي الأمر مطلوب", variant: "destructive" }); return; }
@@ -121,8 +95,8 @@ export function StudentModal({ open, onClose, student }: StudentModalProps) {
       guardian_phone: form.guardian_phone,
       secondary_phone: form.secondary_phone || undefined,
       email: form.email || undefined,
-      teacher_id: form.teacher_id || undefined,
-      circle_id: form.circle_id || undefined,
+      teacher_id: form.teacher_id && form.teacher_id !== "none" ? form.teacher_id : undefined,
+      circle_id: form.circle_id && form.circle_id !== "none" ? form.circle_id : undefined,
       payment_status: form.payment_status,
       payment_amount: form.payment_amount ? parseFloat(form.payment_amount) : undefined,
       is_exempt: form.is_exempt,
@@ -134,28 +108,22 @@ export function StudentModal({ open, onClose, student }: StudentModalProps) {
       enrollment_date: form.enrollment_date,
     };
 
-    if (isEdit && student) {
-      updateStudent.mutate({ id: student.id, data: payload }, {
-        onSuccess: () => {
-          toast({ title: "تم تعديل بيانات الطالب بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
-          onClose();
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء التعديل", variant: "destructive" }),
-      });
-    } else {
-      createStudent.mutate(payload as any, {
-        onSuccess: () => {
-          toast({ title: "تم إضافة الطالب بنجاح" });
-          queryClient.invalidateQueries({ queryKey: getListStudentsQueryKey() });
-          onClose();
-        },
-        onError: () => toast({ title: "حدث خطأ أثناء الإضافة", variant: "destructive" }),
-      });
+    setIsPending(true);
+    try {
+      if (isEdit && student) {
+        await updateStudent(student.id, payload);
+        toast({ title: "تم تعديل بيانات الطالب بنجاح" });
+      } else {
+        await addStudent(payload as any);
+        toast({ title: "تم إضافة الطالب بنجاح" });
+      }
+      onClose();
+    } catch {
+      toast({ title: "حدث خطأ أثناء الحفظ", variant: "destructive" });
+    } finally {
+      setIsPending(false);
     }
   };
-
-  const isPending = createStudent.isPending || updateStudent.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -211,21 +179,21 @@ export function StudentModal({ open, onClose, student }: StudentModalProps) {
           </div>
           <div className="space-y-2">
             <Label>الحلقة</Label>
-            <Select value={form.circle_id} onValueChange={v => set("circle_id", v)}>
+            <Select value={form.circle_id || "none"} onValueChange={v => set("circle_id", v)}>
               <SelectTrigger><SelectValue placeholder="اختر الحلقة" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">بدون حلقة</SelectItem>
-                {circles?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {circles.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label>المعلم</Label>
-            <Select value={form.teacher_id} onValueChange={v => set("teacher_id", v)}>
+            <Select value={form.teacher_id || "none"} onValueChange={v => set("teacher_id", v)}>
               <SelectTrigger><SelectValue placeholder="اختر المعلم" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">بدون معلم</SelectItem>
-                {teachers?.map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
+                {teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -262,9 +230,12 @@ export function StudentModal({ open, onClose, student }: StudentModalProps) {
           </div>
           <div className="space-y-2">
             <Label>مستوى الطالب</Label>
-            <Select value={form.level} onValueChange={v => set("level", v)}>
+            <Select value={form.level || "none"} onValueChange={v => set("level", v === "none" ? "" : v)}>
               <SelectTrigger><SelectValue placeholder="اختر المستوى" /></SelectTrigger>
-              <SelectContent>{LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="none">غير محدد</SelectItem>
+                {LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
