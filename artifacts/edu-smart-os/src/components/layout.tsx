@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { 
+import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -10,17 +10,15 @@ import {
   SidebarMenuItem,
   SidebarProvider,
 } from "@/components/ui/sidebar";
-import { 
-  LayoutDashboard, 
-  Users, 
-  GraduationCap, 
-  CircleDot, 
-  CalendarDays, 
-  Wallet, 
-  Bell, 
-  Trophy, 
-  BarChart3, 
-  HelpCircle 
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  CircleDot,
+  CalendarDays,
+  Wallet,
+  Bell,
+  Trophy,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -35,14 +33,13 @@ export function AppSidebar() {
     { name: "الشؤون المالية", path: "/finance", icon: Wallet },
     { name: "الإشعارات", path: "/notifications", icon: Bell },
     { name: "لوحة الصدارة", path: "/leaderboard", icon: Trophy },
-    { name: "التقارير", path: "/reports", icon: BarChart3 },
-    { name: "مركز المساعدة", path: "/help", icon: HelpCircle },
   ];
 
   return (
     <Sidebar className="border-l border-sidebar-border" side="right">
-      <div className="flex h-16 items-center px-6 border-b border-sidebar-border bg-sidebar-primary text-sidebar-primary-foreground">
-        <h1 className="text-xl font-bold tracking-tight text-gold-500">EDU SMART OS</h1>
+      <div className="flex h-20 items-center px-5 border-b border-sidebar-border bg-sidebar-primary text-sidebar-primary-foreground flex-col justify-center gap-0.5">
+        <h1 className="text-base font-bold tracking-tight text-gold-500 leading-tight text-center">مكتب الفرقان</h1>
+        <p className="text-xs text-gold-500/70 text-center">لتحفيظ القرآن الكريم</p>
       </div>
       <SidebarContent>
         <SidebarGroup>
@@ -66,6 +63,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <div className="p-4 border-t border-sidebar-border">
+        <p className="text-xs text-center text-gold-500/50">نظام إدارة متكامل</p>
+      </div>
     </Sidebar>
   );
 }

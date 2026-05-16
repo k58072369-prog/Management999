@@ -12,15 +12,14 @@ import Sessions from "@/pages/sessions";
 import Finance from "@/pages/finance";
 import Notifications from "@/pages/notifications";
 import Leaderboard from "@/pages/leaderboard";
-import Reports from "@/pages/reports";
-import Help from "@/pages/help";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: false,
+      retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 30_000,
     },
   },
 });
@@ -37,8 +36,6 @@ function Router() {
         <Route path="/finance" component={Finance} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/leaderboard" component={Leaderboard} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/help" component={Help} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
