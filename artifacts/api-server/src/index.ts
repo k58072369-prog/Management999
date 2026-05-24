@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { startAutoBackup } from "./routes/storage";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,8 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Start automatic backup scheduler
+  startAutoBackup();
+  logger.info("Auto-backup scheduler started (every 6 hours)");
 });

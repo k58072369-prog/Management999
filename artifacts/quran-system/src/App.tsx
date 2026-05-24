@@ -14,6 +14,7 @@ import SessionDetail from "@/pages/sessions-id";
 import Finance from "@/pages/finance";
 import Reports from "@/pages/reports";
 import Leaderboard from "@/pages/leaderboard";
+import Storage from "@/pages/storage";
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout";
 
@@ -32,6 +33,7 @@ function Router() {
         <Route path="/finance" component={Finance} />
         <Route path="/reports" component={Reports} />
         <Route path="/leaderboard" component={Leaderboard} />
+        <Route path="/storage" component={Storage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

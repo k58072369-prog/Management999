@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { BookOpen, Users, GraduationCap, Calendar, LineChart, Trophy, DollarSign, LayoutDashboard } from "lucide-react";
+import { BookOpen, Users, GraduationCap, Calendar, LineChart, Trophy, DollarSign, LayoutDashboard, HardDrive } from "lucide-react";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -24,6 +24,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { name: "المالية", href: "/finance", icon: DollarSign },
     { name: "التقارير", href: "/reports", icon: LineChart },
     { name: "لوحة الشرف", href: "/leaderboard", icon: Trophy },
+    { name: "إدارة التخزين", href: "/storage", icon: HardDrive },
   ];
 
   return (

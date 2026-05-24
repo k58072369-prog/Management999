@@ -1,0 +1,72 @@
+{
+  "version": "2.0",
+  "created_at": "2026-05-24T14:53:30.151Z",
+  "triggered_by": "auto",
+  "data": {
+    "students": [],
+    "teachers": [],
+    "circles": [],
+    "sessions": [],
+    "session_records": [],
+    "invoices": [],
+    "expenses": [
+      {
+        "id": "82a7cea1-6c1d-4c89-96e8-4b9f2b4c14bc",
+        "category": "إيجار",
+        "description": "إيجار قاعة الحلقة",
+        "amount": "500.00",
+        "date": "2026-05-01",
+        "paymentMethod": "نقداً",
+        "linkedToType": null,
+        "linkedToId": null,
+        "notes": "إيجار شهر مايو",
+        "createdAt": "2026-05-24T14:38:46.313Z",
+        "updatedAt": "2026-05-24T14:38:46.313Z"
+      }
+    ],
+    "income": [
+      {
+        "id": "1d7286b7-ec1e-49fa-93de-43eb0abacfcf",
+        "type": "تبرع",
+        "description": "تبرع من أحد المحسنين",
+        "amount": "1000.00",
+        "date": "2026-05-10",
+        "paymentMethod": "نقداً",
+        "donorName": "أبو محمد",
+        "notes": null,
+        "createdAt": "2026-05-24T14:38:53.054Z"
+      }
+    ],
+    "payroll": [],
+    "transactions": [
+      {
+        "id": "e07dd085-e6a6-41a7-904d-b72363e5c6aa",
+        "type": "مصروف",
+        "amount": "500.00",
+        "description": "إيجار قاعة الحلقة",
+        "category": "إيجار",
+        "date": "2026-05-01",
+        "linkedType": null,
+        "linkedId": null,
+        "linkedName": null,
+        "sourceTable": "expenses",
+        "sourceId": "82a7cea1-6c1d-4c89-96e8-4b9f2b4c14bc",
+        "createdAt": "2026-05-24T14:38:46.351Z"
+      },
+      {
+        "id": "a68672c6-b26e-4da7-9193-ce41106044b0",
+        "type": "وارد",
+        "amount": "1000.00",
+        "description": "تبرع من أحد المحسنين",
+        "category": "تبرع",
+        "date": "2026-05-10",
+        "linkedType": null,
+        "linkedId": null,
+        "linkedName": null,
+        "sourceTable": "income_entries",
+        "sourceId": "1d7286b7-ec1e-49fa-93de-43eb0abacfcf",
+        "createdAt": "2026-05-24T14:38:53.059Z"
+      }
+    ]
+  }
+}

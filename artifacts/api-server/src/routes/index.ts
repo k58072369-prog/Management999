@@ -10,6 +10,7 @@ import notificationsRouter from "./notifications";
 import leaderboardRouter from "./leaderboard";
 import reportsRouter from "./reports";
 import aiRouter from "./ai";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(notificationsRouter);
 router.use(leaderboardRouter);
 router.use(reportsRouter);
 router.use(aiRouter);
+router.use(storageRouter);
 
 export default router;
