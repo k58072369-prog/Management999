@@ -6,13 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ExpenseInput {
-  category: string;
-  description?: string;
+export interface IncomeEntryInput {
+  type: string;
+  description: string;
   amount: number;
   date: string;
   payment_method?: string;
-  linked_to_type?: string;
-  linked_to_id?: string;
+  donor_name?: string;
   notes?: string;
 }

@@ -341,6 +341,141 @@ export interface ExpenseInput {
   description?: string;
   amount: number;
   date: string;
+  payment_method?: string;
+  linked_to_type?: string;
+  linked_to_id?: string;
+  notes?: string;
+}
+
+export interface IncomeEntry {
+  id: string;
+  type: string;
+  description: string;
+  amount: number;
+  date: string;
+  /** @nullable */
+  payment_method?: string | null;
+  /** @nullable */
+  donor_name?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  created_at?: string;
+}
+
+export interface IncomeEntryInput {
+  type: string;
+  description: string;
+  amount: number;
+  date: string;
+  payment_method?: string;
+  donor_name?: string;
+  notes?: string;
+}
+
+export interface SalaryRecord {
+  id: string;
+  teacher_id: string;
+  /** @nullable */
+  teacher_name?: string | null;
+  month: string;
+  base_salary?: number;
+  session_count?: number;
+  session_rate?: number;
+  bonuses?: number;
+  deductions?: number;
+  total_amount: number;
+  /** @nullable */
+  payment_method?: string | null;
+  status: string;
+  calculation_method?: string;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  paid_at?: string | null;
+  created_at?: string;
+}
+
+export interface SalaryRecordInput {
+  teacher_id: string;
+  month: string;
+  base_salary?: number;
+  session_count?: number;
+  session_rate?: number;
+  bonuses?: number;
+  deductions?: number;
+  total_amount: number;
+  payment_method?: string;
+  status?: string;
+  calculation_method: string;
+  notes?: string;
+}
+
+export interface SalaryRecordUpdate {
+  base_salary?: number;
+  bonuses?: number;
+  deductions?: number;
+  total_amount?: number;
+  payment_method?: string;
+  status?: string;
+  notes?: string;
+  paid_at?: string;
+}
+
+export interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  description: string;
+  /** @nullable */
+  category?: string | null;
+  date: string;
+  /** @nullable */
+  linked_type?: string | null;
+  /** @nullable */
+  linked_id?: string | null;
+  /** @nullable */
+  linked_name?: string | null;
+  /** @nullable */
+  source_table?: string | null;
+  /** @nullable */
+  source_id?: string | null;
+  created_at?: string;
+}
+
+export type FinanceAnalyticsMonthlyTrendsItem = {
+  month: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+  salary_cost?: number;
+};
+
+export type FinanceAnalyticsExpenseByCategoryItem = {
+  category: string;
+  total: number;
+  count?: number;
+};
+
+export type FinanceAnalyticsTeacherPerformanceItem = {
+  teacher_id: string;
+  teacher_name: string;
+  salary_cost: number;
+  session_count: number;
+  student_count?: number;
+};
+
+export type FinanceAnalyticsIncomeByTypeItem = {
+  type?: string;
+  total?: number;
+};
+
+export interface FinanceAnalytics {
+  monthly_trends: FinanceAnalyticsMonthlyTrendsItem[];
+  expense_by_category: FinanceAnalyticsExpenseByCategoryItem[];
+  collection_rate: number;
+  total_outstanding?: number;
+  teacher_performance: FinanceAnalyticsTeacherPerformanceItem[];
+  income_by_type?: FinanceAnalyticsIncomeByTypeItem[];
 }
 
 export type FinanceSummaryMonthlyBreakdownItem = {
@@ -472,6 +607,28 @@ status?: string;
 };
 
 export type GetFinanceSummaryParams = {
+month?: string;
+};
+
+export type GetFinanceAnalyticsParams = {
+months?: number;
+};
+
+export type ListIncomeParams = {
+type?: string;
+};
+
+export type ListPayrollParams = {
+month?: string;
+teacher_id?: string;
+};
+
+export type CalculatePayrollBody = {
+  month: string;
+};
+
+export type ListTransactionsParams = {
+type?: string;
 month?: string;
 };
 

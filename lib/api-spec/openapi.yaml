@@ -558,6 +558,46 @@ paths:
               schema:
                 $ref: "#/components/schemas/Expense"
 
+  /expenses/{id}:
+    patch:
+      operationId: updateExpense
+      tags: [finance]
+      summary: Update an expense
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpenseInput"
+      responses:
+        "200":
+          description: Updated expense
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Expense"
+    delete:
+      operationId: deleteExpense
+      tags: [finance]
+      summary: Delete an expense
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
   /finance/summary:
     get:
       operationId: getFinanceSummary
@@ -574,6 +614,202 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FinanceSummary"
+
+  /finance/analytics:
+    get:
+      operationId: getFinanceAnalytics
+      tags: [finance]
+      summary: Get advanced financial analytics
+      parameters:
+        - name: months
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceAnalytics"
+
+  /income:
+    get:
+      operationId: listIncome
+      tags: [finance]
+      summary: List extra income entries
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of income entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IncomeEntry"
+    post:
+      operationId: createIncome
+      tags: [finance]
+      summary: Create income entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncomeEntryInput"
+      responses:
+        "201":
+          description: Created income entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncomeEntry"
+
+  /income/{id}:
+    delete:
+      operationId: deleteIncome
+      tags: [finance]
+      summary: Delete income entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /payroll:
+    get:
+      operationId: listPayroll
+      tags: [finance]
+      summary: List teacher salary records
+      parameters:
+        - name: month
+          in: query
+          schema: { type: string }
+        - name: teacher_id
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Salary records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalaryRecord"
+    post:
+      operationId: createPayroll
+      tags: [finance]
+      summary: Create salary record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SalaryRecordInput"
+      responses:
+        "201":
+          description: Created salary record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryRecord"
+
+  /payroll/{id}:
+    patch:
+      operationId: updatePayroll
+      tags: [finance]
+      summary: Update salary record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SalaryRecordUpdate"
+      responses:
+        "200":
+          description: Updated salary record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryRecord"
+    delete:
+      operationId: deletePayroll
+      tags: [finance]
+      summary: Delete salary record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+
+  /payroll/calculate:
+    post:
+      operationId: calculatePayroll
+      tags: [finance]
+      summary: Auto-calculate salaries for all teachers for a month
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [month]
+              properties:
+                month: { type: string }
+      responses:
+        "201":
+          description: Calculated salary records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalaryRecord"
+
+  /transactions:
+    get:
+      operationId: listTransactions
+      tags: [finance]
+      summary: List all financial transactions
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: month
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
 
   /notifications:
     get:
@@ -1032,6 +1268,150 @@ components:
         description: { type: string }
         amount: { type: number }
         date: { type: string }
+        payment_method: { type: string }
+        linked_to_type: { type: string }
+        linked_to_id: { type: string }
+        notes: { type: string }
+
+    IncomeEntry:
+      type: object
+      required: [id, type, description, amount, date]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        description: { type: string }
+        amount: { type: number }
+        date: { type: string }
+        payment_method: { type: ["string", "null"] }
+        donor_name: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    IncomeEntryInput:
+      type: object
+      required: [type, description, amount, date]
+      properties:
+        type: { type: string }
+        description: { type: string }
+        amount: { type: number }
+        date: { type: string }
+        payment_method: { type: string }
+        donor_name: { type: string }
+        notes: { type: string }
+
+    SalaryRecord:
+      type: object
+      required: [id, teacher_id, month, total_amount, status]
+      properties:
+        id: { type: string }
+        teacher_id: { type: string }
+        teacher_name: { type: ["string", "null"] }
+        month: { type: string }
+        base_salary: { type: number }
+        session_count: { type: number }
+        session_rate: { type: number }
+        bonuses: { type: number }
+        deductions: { type: number }
+        total_amount: { type: number }
+        payment_method: { type: ["string", "null"] }
+        status: { type: string }
+        calculation_method: { type: string }
+        notes: { type: ["string", "null"] }
+        paid_at: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    SalaryRecordInput:
+      type: object
+      required: [teacher_id, month, total_amount, calculation_method]
+      properties:
+        teacher_id: { type: string }
+        month: { type: string }
+        base_salary: { type: number }
+        session_count: { type: number }
+        session_rate: { type: number }
+        bonuses: { type: number }
+        deductions: { type: number }
+        total_amount: { type: number }
+        payment_method: { type: string }
+        status: { type: string }
+        calculation_method: { type: string }
+        notes: { type: string }
+
+    SalaryRecordUpdate:
+      type: object
+      properties:
+        base_salary: { type: number }
+        bonuses: { type: number }
+        deductions: { type: number }
+        total_amount: { type: number }
+        payment_method: { type: string }
+        status: { type: string }
+        notes: { type: string }
+        paid_at: { type: string }
+
+    Transaction:
+      type: object
+      required: [id, type, amount, description, date]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        amount: { type: number }
+        description: { type: string }
+        category: { type: ["string", "null"] }
+        date: { type: string }
+        linked_type: { type: ["string", "null"] }
+        linked_id: { type: ["string", "null"] }
+        linked_name: { type: ["string", "null"] }
+        source_table: { type: ["string", "null"] }
+        source_id: { type: ["string", "null"] }
+        created_at: { type: string }
+
+    FinanceAnalytics:
+      type: object
+      required: [monthly_trends, expense_by_category, collection_rate, teacher_performance]
+      properties:
+        monthly_trends:
+          type: array
+          items:
+            type: object
+            required: [month, revenue, expenses, profit]
+            properties:
+              month: { type: string }
+              revenue: { type: number }
+              expenses: { type: number }
+              profit: { type: number }
+              salary_cost: { type: number }
+        expense_by_category:
+          type: array
+          items:
+            type: object
+            required: [category, total]
+            properties:
+              category: { type: string }
+              total: { type: number }
+              count: { type: integer }
+        collection_rate:
+          type: number
+        total_outstanding:
+          type: number
+        teacher_performance:
+          type: array
+          items:
+            type: object
+            required: [teacher_id, teacher_name, salary_cost, session_count]
+            properties:
+              teacher_id: { type: string }
+              teacher_name: { type: string }
+              salary_cost: { type: number }
+              session_count: { type: integer }
+              student_count: { type: integer }
+        income_by_type:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string }
+              total: { type: number }
 
     FinanceSummary:
       type: object

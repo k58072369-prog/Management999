@@ -692,7 +692,52 @@ export const CreateExpenseBody = zod.object({
   "category": zod.string(),
   "description": zod.string().optional(),
   "amount": zod.number(),
-  "date": zod.string()
+  "date": zod.string(),
+  "payment_method": zod.string().optional(),
+  "linked_to_type": zod.string().optional(),
+  "linked_to_id": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Update an expense
+ */
+export const UpdateExpenseParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateExpenseBody = zod.object({
+  "category": zod.string(),
+  "description": zod.string().optional(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "payment_method": zod.string().optional(),
+  "linked_to_type": zod.string().optional(),
+  "linked_to_id": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+export const UpdateExpenseResponse = zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "description": zod.string().nullish(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "created_at": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete an expense
+ */
+export const DeleteExpenseParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteExpenseResponse = zod.object({
+  "success": zod.boolean(),
+  "id": zod.string().optional()
 })
 
 
@@ -717,6 +762,222 @@ export const GetFinanceSummaryResponse = zod.object({
   "expenses": zod.number()
 })).optional()
 })
+
+
+/**
+ * @summary Get advanced financial analytics
+ */
+export const GetFinanceAnalyticsQueryParams = zod.object({
+  "months": zod.coerce.number().optional()
+})
+
+export const GetFinanceAnalyticsResponse = zod.object({
+  "monthly_trends": zod.array(zod.object({
+  "month": zod.string(),
+  "revenue": zod.number(),
+  "expenses": zod.number(),
+  "profit": zod.number(),
+  "salary_cost": zod.number().optional()
+})),
+  "expense_by_category": zod.array(zod.object({
+  "category": zod.string(),
+  "total": zod.number(),
+  "count": zod.number().optional()
+})),
+  "collection_rate": zod.number(),
+  "total_outstanding": zod.number().optional(),
+  "teacher_performance": zod.array(zod.object({
+  "teacher_id": zod.string(),
+  "teacher_name": zod.string(),
+  "salary_cost": zod.number(),
+  "session_count": zod.number(),
+  "student_count": zod.number().optional()
+})),
+  "income_by_type": zod.array(zod.object({
+  "type": zod.string().optional(),
+  "total": zod.number().optional()
+})).optional()
+})
+
+
+/**
+ * @summary List extra income entries
+ */
+export const ListIncomeQueryParams = zod.object({
+  "type": zod.coerce.string().optional()
+})
+
+export const ListIncomeResponseItem = zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "payment_method": zod.string().nullish(),
+  "donor_name": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "created_at": zod.string().optional()
+})
+export const ListIncomeResponse = zod.array(ListIncomeResponseItem)
+
+
+/**
+ * @summary Create income entry
+ */
+export const CreateIncomeBody = zod.object({
+  "type": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "payment_method": zod.string().optional(),
+  "donor_name": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete income entry
+ */
+export const DeleteIncomeParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteIncomeResponse = zod.object({
+  "success": zod.boolean(),
+  "id": zod.string().optional()
+})
+
+
+/**
+ * @summary List teacher salary records
+ */
+export const ListPayrollQueryParams = zod.object({
+  "month": zod.coerce.string().optional(),
+  "teacher_id": zod.coerce.string().optional()
+})
+
+export const ListPayrollResponseItem = zod.object({
+  "id": zod.string(),
+  "teacher_id": zod.string(),
+  "teacher_name": zod.string().nullish(),
+  "month": zod.string(),
+  "base_salary": zod.number().optional(),
+  "session_count": zod.number().optional(),
+  "session_rate": zod.number().optional(),
+  "bonuses": zod.number().optional(),
+  "deductions": zod.number().optional(),
+  "total_amount": zod.number(),
+  "payment_method": zod.string().nullish(),
+  "status": zod.string(),
+  "calculation_method": zod.string().optional(),
+  "notes": zod.string().nullish(),
+  "paid_at": zod.string().nullish(),
+  "created_at": zod.string().optional()
+})
+export const ListPayrollResponse = zod.array(ListPayrollResponseItem)
+
+
+/**
+ * @summary Create salary record
+ */
+export const CreatePayrollBody = zod.object({
+  "teacher_id": zod.string(),
+  "month": zod.string(),
+  "base_salary": zod.number().optional(),
+  "session_count": zod.number().optional(),
+  "session_rate": zod.number().optional(),
+  "bonuses": zod.number().optional(),
+  "deductions": zod.number().optional(),
+  "total_amount": zod.number(),
+  "payment_method": zod.string().optional(),
+  "status": zod.string().optional(),
+  "calculation_method": zod.string(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Update salary record
+ */
+export const UpdatePayrollParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdatePayrollBody = zod.object({
+  "base_salary": zod.number().optional(),
+  "bonuses": zod.number().optional(),
+  "deductions": zod.number().optional(),
+  "total_amount": zod.number().optional(),
+  "payment_method": zod.string().optional(),
+  "status": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "paid_at": zod.string().optional()
+})
+
+export const UpdatePayrollResponse = zod.object({
+  "id": zod.string(),
+  "teacher_id": zod.string(),
+  "teacher_name": zod.string().nullish(),
+  "month": zod.string(),
+  "base_salary": zod.number().optional(),
+  "session_count": zod.number().optional(),
+  "session_rate": zod.number().optional(),
+  "bonuses": zod.number().optional(),
+  "deductions": zod.number().optional(),
+  "total_amount": zod.number(),
+  "payment_method": zod.string().nullish(),
+  "status": zod.string(),
+  "calculation_method": zod.string().optional(),
+  "notes": zod.string().nullish(),
+  "paid_at": zod.string().nullish(),
+  "created_at": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete salary record
+ */
+export const DeletePayrollParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeletePayrollResponse = zod.object({
+  "success": zod.boolean(),
+  "id": zod.string().optional()
+})
+
+
+/**
+ * @summary Auto-calculate salaries for all teachers for a month
+ */
+export const CalculatePayrollBody = zod.object({
+  "month": zod.string()
+})
+
+
+/**
+ * @summary List all financial transactions
+ */
+export const ListTransactionsQueryParams = zod.object({
+  "type": zod.coerce.string().optional(),
+  "month": zod.coerce.string().optional()
+})
+
+export const ListTransactionsResponseItem = zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "amount": zod.number(),
+  "description": zod.string(),
+  "category": zod.string().nullish(),
+  "date": zod.string(),
+  "linked_type": zod.string().nullish(),
+  "linked_id": zod.string().nullish(),
+  "linked_name": zod.string().nullish(),
+  "source_table": zod.string().nullish(),
+  "source_id": zod.string().nullish(),
+  "created_at": zod.string().optional()
+})
+export const ListTransactionsResponse = zod.array(ListTransactionsResponseItem)
 
 
 /**

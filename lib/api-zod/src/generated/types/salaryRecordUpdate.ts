@@ -6,13 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ExpenseInput {
-  category: string;
-  description?: string;
-  amount: number;
-  date: string;
+export interface SalaryRecordUpdate {
+  base_salary?: number;
+  bonuses?: number;
+  deductions?: number;
+  total_amount?: number;
   payment_method?: string;
-  linked_to_type?: string;
-  linked_to_id?: string;
+  status?: string;
   notes?: string;
+  paid_at?: string;
 }
